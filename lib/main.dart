@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
+import 'package:health_flex/app/controllers/api_controller.dart';
 
 import 'app/routes/app_pages.dart';
 
@@ -10,6 +11,9 @@ void main() {
       title: "Application",
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
+      onInit: () {
+        Get.put(APIController());
+      },
     ),
   );
 }
