@@ -14,9 +14,17 @@ class TrendingGifsController extends GetxController {
 
   final trendingGIFs = List<GIF>.empty().obs;
 
-  final _gifsState = WidgetState.initial.obs;
-  WidgetState get gifsState => this._gifsState.value;
-  set gifsState(WidgetState value) => this._gifsState.value = value;
+  final _gifsState = PaginatedWidgetState.initial.obs;
+  PaginatedWidgetState get gifsState => this._gifsState.value;
+  set gifsState(PaginatedWidgetState value) => this._gifsState.value = value;
+
+  final _currentPage = 0.obs;
+  int get currentPage => this._currentPage.value;
+  set currentPage(int value) => this._currentPage.value = value;
+
+  final _hasMoreData = true.obs;
+  bool get hasMoreData => this._hasMoreData.value;
+  set hasMoreData(bool value) => this._hasMoreData.value = value;
 
   @override
   void onInit() {
@@ -46,7 +54,9 @@ class TrendingGifsController extends GetxController {
 
   Future<void> getTrendingGIFs() async {
     try {
-      gifsState = WidgetState.loading;
+      gifsState = currentPage == 0
+          ? PaginatedWidgetState.loading
+          : PaginatedWidgetState.paginationLoading;
       final baseOptions = BaseOptions(
         baseUrl: 'https://api.giphy.com/',
         connectTimeout: const Duration(seconds: 30),
@@ -56,7 +66,7 @@ class TrendingGifsController extends GetxController {
       dio.interceptors.add(PrettyDioLogger());
       final query = TrendingGIFRequestDTO(
         limit: 25,
-        offset: 0,
+        offset: currentPage,
         rating: 'g',
         bundle: 'messaging_non_clips',
         apiKey: Keys.giphyAPIKey,
@@ -66,10 +76,14 @@ class TrendingGifsController extends GetxController {
         queryParameters: query.toJson(),
       );
       final trendingGIFsResponse = TrendingGIFsResponse.fromJson(response.data);
+      if (trendingGIFsResponse.data?.isEmpty ?? true) hasMoreData = false;
       trendingGIFs.addAll(trendingGIFsResponse.data ?? []);
-      gifsState = WidgetState.success;
+      currentPage++;
+      gifsState = PaginatedWidgetState.success;
     } catch (e) {
-      gifsState = WidgetState.error;
+      gifsState = currentPage == 0
+          ? PaginatedWidgetState.error
+          : PaginatedWidgetState.paginationError;
       debugPrint(e.toString());
     }
   }
