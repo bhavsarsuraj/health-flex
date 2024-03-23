@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:health_flex/app/data/models/custom_exception.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 class APIController {
-  late Dio _dio;
+  Dio _dio = Dio();
 
   void init() {
     final baseOptions = BaseOptions(
@@ -10,7 +13,8 @@ class APIController {
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
     );
-    _dio = Dio(baseOptions);
+    _dio.options = baseOptions;
+    _dio.interceptors.add(PrettyDioLogger());
   }
 
   Future<Map<String, dynamic>> get({
@@ -31,7 +35,17 @@ class APIController {
   }
 
   CustomException _handleError(DioException e) {
-    //TODO:
-    return CustomException(error: 'Something went wrong');
+    if (e is SocketException) {
+      return CustomException(error: 'No internet connnection');
+    } else {
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          return CustomException(error: 'Server timeout');
+        default:
+          return CustomException(error: 'Something went wrong');
+      }
+    }
   }
 }

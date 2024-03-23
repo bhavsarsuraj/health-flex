@@ -13,6 +13,7 @@ void main() {
       getPages: AppPages.routes,
       onInit: () {
         Get.put(APIController());
+        Get.find<APIController>().init();
       },
     ),
   );

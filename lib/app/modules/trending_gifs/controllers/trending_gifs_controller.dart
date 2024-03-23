@@ -1,16 +1,14 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:health_flex/app/controllers/api_controller.dart';
 import 'package:health_flex/app/data/models/request/trending/trending_gifs_request.dto.dart';
 import 'package:health_flex/app/data/models/response/gif/gif.dart';
-import 'package:health_flex/app/data/models/response/trending/trending_gifs_response.dart';
+import 'package:health_flex/app/data/repository/giphy_repository.dart';
 import 'package:health_flex/app/utils/enums.dart';
 import 'package:health_flex/app/utils/keys.dart';
-import 'package:health_flex/app/utils/urls.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 class TrendingGifsController extends GetxController {
-  // late GiphyRepository _giphyRepository;
+  late GiphyRepository _giphyRepository;
 
   final trendingGIFs = List<GIF>.empty().obs;
 
@@ -38,8 +36,8 @@ class TrendingGifsController extends GetxController {
   }
 
   void _initRepositories() {
-    // final apiController = Get.find<APIController>();
-    // _giphyRepository = GiphyRepository(apiController: apiController);
+    final apiController = Get.find<APIController>();
+    _giphyRepository = GiphyRepository(apiController: apiController);
   }
 
   @override
@@ -57,13 +55,7 @@ class TrendingGifsController extends GetxController {
       gifsState = currentPage == 0
           ? PaginatedWidgetState.loading
           : PaginatedWidgetState.paginationLoading;
-      final baseOptions = BaseOptions(
-        baseUrl: 'https://api.giphy.com/',
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-      );
-      final dio = Dio(baseOptions);
-      dio.interceptors.add(PrettyDioLogger());
+
       final query = TrendingGIFRequestDTO(
         limit: 25,
         offset: currentPage,
@@ -71,13 +63,9 @@ class TrendingGifsController extends GetxController {
         bundle: 'messaging_non_clips',
         apiKey: Keys.giphyAPIKey,
       );
-      final response = await dio.get(
-        Urls.trendingGIFs,
-        queryParameters: query.toJson(),
-      );
-      final trendingGIFsResponse = TrendingGIFsResponse.fromJson(response.data);
-      if (trendingGIFsResponse.data?.isEmpty ?? true) hasMoreData = false;
-      trendingGIFs.addAll(trendingGIFsResponse.data ?? []);
+      final response = await _giphyRepository.getTrendingGIFs(query);
+      if (response.data?.isEmpty ?? true) hasMoreData = false;
+      trendingGIFs.addAll(response.data ?? []);
       currentPage++;
       gifsState = PaginatedWidgetState.success;
     } catch (e) {
